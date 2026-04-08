@@ -8,17 +8,17 @@
         "type": "tabs",
         "children": [
           {
-            "id": "f252184b04fb52b8",
+            "id": "43106a041c769af5",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Runbook debug Longhorn - Network - iSCSI node3.md",
+                "file": "01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Runbook debug Longhorn - Network - iSCSI node3"
+              "title": "pod-priority-preemption-pdb-qos"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Runbook debug Longhorn - Network - iSCSI node3.md",
+                "file": "Index.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Runbook debug Longhorn - Network - iSCSI node3"
+              "title": "Backlinks for Index"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Runbook debug Longhorn - Network - iSCSI node3.md",
+                "file": "Index.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Runbook debug Longhorn - Network - iSCSI node3"
+              "title": "Outgoing links from Index"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Runbook debug Longhorn - Network - iSCSI node3.md",
+                "file": "Index.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Runbook debug Longhorn - Network - iSCSI node3"
+              "title": "Outline of Index"
             }
           }
         ]
@@ -183,12 +183,45 @@
       "bases:Create new base": false
     }
   },
-  "active": "f252184b04fb52b8",
+  "active": "43106a041c769af5",
   "lastOpenFiles": [
-    "Welcome.md",
+    "01-concepts/kubernetes/kubernetes-architecture-explained.md",
+    "01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md",
+    "01-concepts/kubernetes/raft-etcd-quorum-vs-repmgr.md",
+    "99-scratch/k8s-manual-commands.md",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/scheduler-logic.gif",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/kube-proxy.png",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/overview.png",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/scheduler-overview.gif",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/controller-manager.gif",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/container-runtime.png",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/cluster-diagram.gif",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/cloud-controller-manager.gif",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/kubelet.png",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/etcd.gif",
+    "01-concepts/kubernetes/assets/kubernetes-architecture-explained",
+    "01-concepts/kubernetes/assets",
+    "article.html",
+    "02-architecture/postgresql-ha/postgresql-ha-statefulset-longhorn-repmgr.md",
+    "02-architecture/postgresql-ha/bitnami-images-in-postgresql-statefulset.md",
+    "01-concepts/kubernetes/configmap-secret-mount-into-pod.md",
+    "01-concepts/kubernetes/db-deployment-pvc-vs-statefulset.md",
+    "03-runbooks/longhorn/longhorn-network-iscsi-node3-debug-runbook.md",
+    "restore_notes.ps1",
+    "Index.md",
+    "Note command in K8s by manual.md",
+    "99-scratch",
+    "03-runbooks/longhorn",
+    "03-runbooks",
+    "01-concepts/kubernetes",
+    "01-concepts",
+    "02-architecture/postgresql-ha",
     "Runbook debug Longhorn - Network - iSCSI node3.md",
+    "PostgreSQL HA trên Kubernetes - StatefulSet Longhorn repmgr.md",
     "DB Deployment PVC vs StatefulSet.md",
     "ConfigMap Secret và cơ chế mount vào Pod.md",
-    "Bitnami Images trong PostgreSQL StatefulSet.md"
+    "Bitnami Images trong PostgreSQL StatefulSet.md",
+    "PostgreSQL HA tren Kubernetes - StatefulSet Longhorn repmgr.md",
+    "Welcome.md"
   ]
 }

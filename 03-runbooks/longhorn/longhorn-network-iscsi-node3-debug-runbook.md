@@ -1,3 +1,19 @@
+---
+doc_id: longhorn-network-iscsi-node3-debug-runbook
+title: Runbook debug Longhorn -> Network -> iSCSI khi node3 khÃ´ng báº¯t Ä‘Æ°á»£c Longhorn
+legacy_title: Runbook debug Longhorn - Network - iSCSI node3
+type: runbook
+domain: storage
+keywords:
+  - longhorn
+  - network
+  - iscsi
+  - node3
+  - csi
+  - debug
+status: active
+---
+
 # Runbook debug Longhorn -> Network -> iSCSI khi node3 không bắt được Longhorn
 
 > Mục tiêu của tài liệu này là biến một case debug thực tế thành **một quy trình suy luận có thứ tự**.

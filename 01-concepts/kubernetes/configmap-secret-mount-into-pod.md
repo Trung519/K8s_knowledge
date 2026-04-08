@@ -1,3 +1,19 @@
+---
+doc_id: configmap-secret-mount-into-pod
+title: ConfigMap, Secret và cơ chế mount vào Pod
+legacy_title: ConfigMap Secret và cơ chế mount vào Pod
+type: concept-note
+domain: kubernetes
+keywords:
+  - configmap
+  - secret
+  - mount
+  - env
+  - volume
+  - pod
+status: active
+---
+
 # ConfigMap, Secret và cơ chế mount vào Pod
 
 Nguồn tham khảo:

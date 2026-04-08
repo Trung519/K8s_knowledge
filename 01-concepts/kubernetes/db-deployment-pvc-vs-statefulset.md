@@ -1,3 +1,18 @@
+---
+doc_id: db-deployment-pvc-vs-statefulset
+title: DB Deployment + PVC vs DB StatefulSet
+legacy_title: DB Deployment PVC vs StatefulSet
+type: concept-note
+domain: kubernetes
+keywords:
+  - database
+  - deployment
+  - pvc
+  - statefulset
+  - storage
+status: active
+---
+
 # DB Deployment + PVC vs DB StatefulSet
 
 Dưới đây là bản tổng hợp chi tiết để phân biệt rõ `Deployment + PVC` cho database và `StatefulSet` cho database, đồng thời nối nó với câu chuyện PostgreSQL HA, `primary/standby`, `preStop`, failover và các hiểu nhầm rất thường gặp.

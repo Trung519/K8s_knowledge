@@ -1,3 +1,18 @@
+---
+doc_id: bitnami-images-in-postgresql-statefulset
+title: Bitnami Images trong PostgreSQL StatefulSet
+legacy_title: Bitnami Images trong PostgreSQL StatefulSet
+type: reference-note
+domain: kubernetes
+keywords:
+  - postgresql
+  - bitnami
+  - image
+  - statefulset
+  - high-availability
+status: active
+---
+
 # Bitnami Images trong PostgreSQL StatefulSet
 
 Nguồn đọc:
