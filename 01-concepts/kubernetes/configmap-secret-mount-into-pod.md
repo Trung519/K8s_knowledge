@@ -132,6 +132,19 @@ Theo Kubernetes docs về `Volumes`:
 
 Mount chỉ có nghĩa là file đó xuất hiện trong filesystem của container.
 
+Chính xác hơn:
+
+- kubelet chịu trách nhiệm chuẩn bị pod và mount `ConfigMap`/`Secret` vào container
+- nhưng kubelet không tự suy luận rằng "thấy có file `.sh` thì phải chạy file đó"
+- script chỉ chạy khi `podSpec` hoặc process trong container có chỉ định rõ cách dùng file đó
+
+Ví dụ các trường hợp script thật sự được chạy:
+
+- container `command` / `args` gọi tới file script đã mount
+- ứng dụng bên trong container tự đọc và chạy file đó
+- lifecycle hook như `preStop` hoặc `postStart` được cấu hình để exec script
+- `exec probe` được cấu hình để chạy lệnh trong container
+
 ## Vậy script trong ConfigMap có hợp lý không?
 
 ==Có, hoàn toàn hợp lý.==
@@ -262,11 +275,16 @@ Nghĩa là:
 
 1. Pod bị yêu cầu dừng.
 2. Kubelet bắt đầu quá trình terminate.
-3. Vì container có `preStop`, kubelet exec `/pre-stop.sh`.
+3. Vì container có `preStop`, kubelet yêu cầu runtime exec `/pre-stop.sh` bên trong container.
 4. Script chạy xong.
 5. Sau đó Kubernetes mới tiếp tục quá trình dừng container.
 
 <span style="color:red">Đây chính là chỗ mang nghĩa: "ok pod tao sắp chết rồi, chạy script đó đi".</span>
+
+Điểm cần phân biệt:
+
+- kubelet không tự chạy "mọi script nằm trong ConfigMap/Secret"
+- kubelet chỉ kích hoạt script khi Pod đã khai báo rõ hook hoặc lệnh cần chạy
 
 ## Khi nào `preStop` được gọi?
 

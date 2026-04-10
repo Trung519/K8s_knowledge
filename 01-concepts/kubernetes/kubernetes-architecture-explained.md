@@ -261,7 +261,16 @@ Theo bài, scheduler hoạt động theo 2 pha lớn:
 
 Một ý đáng nhớ:
 
-- scheduler không nhất thiết phải scan toàn bộ node trong cluster lớn
+- scheduler ko thực hiện filter và scan trên toàn bộ các node đang có hiện tại mà nó:
+	-  Đầu tiên sẽ filter toàn bộ node xem coi node nào phù hợp với điều kiện cơ bản ban đầu của pod.
+		- Ví dụ: ✔ đủ resource
+				✔ đúng label
+				✔ không bị taint (hoặc có toleration)
+				✔ không conflict affinity
+				✔ volume OK
+				✔ node healthy
+				✔ không conflict port
+	* Sau đó dựa vào `percentageOfNodesToScore` để chọn ra 1 số lượng nhỏ các node đó để đem đi tính toán trên đó để chọn ra node có thể binding
 - có tham số `percentageOfNodesToScore`
 - mặc định thường là `50%`
 - với cluster rất lớn, mặc định có thể là `5%`
@@ -306,7 +315,7 @@ Muốn hiểu `kube-controller-manager` phải hiểu `controller` là gì.
 Theo bài:
 
 - controller là chương trình chạy `infinite control loops`
-- luôn quan sát `actual state` và `desired state`
+- luôn quan sát `actual state` và `desired state (trạng thái mong muốn)`
 - nếu hai trạng thái lệch nhau thì controller tìm cách kéo actual về desired
 
 Ví dụ rất dễ hiểu:
@@ -334,7 +343,7 @@ Những controller được bài liệt kê:
 
 ### Ý cốt lõi cần nhớ
 
-- ==Controller manager không trực tiếp "chạy pod", mà nó liên tục reconcile trạng thái cluster.==
+- ==Controller manager không trực tiếp "chạy pod", mà nó liên tục reconcile (điều hòa) trạng thái cluster.==
 - ==Kubernetes mạnh ở chỗ nó vận hành theo mô hình desired state + reconcile loop.==
 
 Bài cũng nhấn mạnh:
@@ -412,6 +421,28 @@ Theo bài:
 
 ==Có thể hiểu kubelet là người "thi hành mệnh lệnh" trên từng node.==
 
+### Cách hình dung đúng về kubelet
+
+Có thể ví von `kubelet` như một "kỹ sư hiện trường" của worker node:
+
+- nó không tự mình làm tất cả mọi việc ở mức thấp nhất
+- nó là tiến trình cầm `podSpec`, hiểu node cần trở thành trạng thái nào
+- rồi nó gọi đúng interface/tool để hiện thực việc đó trên node
+
+Ví dụ:
+
+- cần chạy container -> kubelet gọi `container runtime` qua `CRI`
+- cần cấp mạng cho pod -> runtime/kubelet phối hợp với plugin `CNI`
+- cần mount storage -> kubelet phối hợp với `CSI` và volume subsystem
+- cần chạy `probe` hoặc lifecycle hook kiểu `exec` -> kubelet yêu cầu runtime mở phiên exec trong container
+
+Hiểu ngắn gọn:
+
+- `kubelet` là người điều phối thi công ở cấp node
+- runtime, `CNI`, `CSI` là các lớp/tool chuyên biệt mà kubelet sử dụng
+
+<span style="color:red">Kubelet không phải là component quyết định cluster phải scale lên bao nhiêu pod; quyết định reconcile desired state ở mức cluster là việc của controller, còn kubelet là bên hiện thực phần việc được giao trên node.</span>
+
 ### kubelet nhận podSpec từ đâu
 
 Bài nhắc 4 nguồn:
@@ -447,7 +478,41 @@ Use case rất quan trọng:
 2. có HTTP endpoint để stream logs và mở exec sessions
 3. dùng `CSI` qua gRPC cho block volume
 4. dùng plugin `CNI` để cấp pod IP, route mạng và firewall rules
+==CNI và CRI - Take note==
+**CNI và CRI là gì?**
 
+CRI = Container Runtime Interface
+
+- là interface để kubelet nói chuyện với runtime
+- lo chuyện container lifecycle: pull image, create, start, stop, delete container
+- ví dụ runtime: containerd, CRI-O
+
+Ví dụ thực tế:
+
+- kubelet nhận pod mới
+- kubelet gọi CRI: “pull image nginx”, “tạo pod sandbox”, “tạo container”, “start container”
+
+CNI = Container Networking Interface
+
+- là chuẩn/plugin cho networking của container/pod
+- lo chuyện cấp IP, tạo interface mạng, route, đôi khi cả policy/load balancing tùy plugin
+- ví dụ plugin: Calico, Flannel, Cilium, Amazon VPC CNI, Azure CNI ([file](app://-/index.html?hostId=local))
+
+Ví dụ thực tế:
+
+- pod mới được tạo
+- runtime/kubelet cần mạng cho pod
+- CNI plugin sẽ:
+    - cấp IP cho pod
+    - tạo veth pair
+    - nối pod vào bridge/overlay
+    - thêm route/rule để pod nói chuyện được với pod khác
+
+Hiểu cực ngắn:
+
+- CRI lo “chạy container”
+- CNI lo “nối mạng cho pod”
+==CNI CRI - end take note ==
 ### Điểm mới mà bài nhắc
 
 Theo bài, từ `Kubernetes v1.35` ở mức `General Availability`:
@@ -455,6 +520,33 @@ Theo bài, từ `Kubernetes v1.35` ở mức `General Availability`:
 - kubelet có thể resize CPU/memory request và limit của pod khi pod đang chạy
 - nhiều trường hợp không cần restart container
 - đây là tính năng `in-place pod resize`
+==Hiểu thêm một chút về API server kubelet và cách 1 câu lệnh được input và xử lý như thế nào?
+- kubectl gửi HTTP request tới kube-apiserver ([note](app://-/index.html?hostId=local))
+- API server là cửa vào trung tâm: nó xác thực, phân quyền, chạy admission/validation, rồi xử lý request
+- nếu request là kiểu lưu state như create, apply, patch, update, delete thì API server ghi state/object vào etcd
+- sau đó API server trả response lại cho user
+
+Nhưng chỗ quan trọng là:
+
+- API server không phải bên tự đi “làm hết phần còn lại” trên cluster
+- nó chủ yếu là nơi nhận request, kiểm tra, lưu state, expose API, và phát thay đổi cho các component khác
+- các component như controller, scheduler, kubelet mới là bên watch API server rồi tự làm phần việc của mình
+
+Ví dụ kubectl scale deployment app --replicas=5:
+
+1. kubectl gửi request tới API server.
+2. API server xác thực, validate, rồi cập nhật Deployment.spec.replicas = 5 trong etcd.
+3. API server trả kết quả thành công cho user khá sớm.
+4. Deployment controller thấy desired state mới là 5, nên tạo thêm Pod object.
+5. Scheduler chọn node cho pod mới.
+6. Kubelet trên node được chọn mới thực sự gọi runtime để chạy pod.
+
+Nên có thể nhớ như này:
+
+- API server = cửa vào + bộ điều phối API + nơi ghi/đọc state
+- etcd = kho state
+- controller/scheduler/kubelet = các bên thực thi tiếp theo
+==END - For the previous highlight
 
 ## 7. kube-proxy (optional)
 

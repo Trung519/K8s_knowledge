@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md",
+                "file": "01-concepts/kubernetes/kubernetes-architecture-explained.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "pod-priority-preemption-pdb-qos"
+              "title": "kubernetes-architecture-explained"
             }
           }
         ]
@@ -185,8 +185,8 @@
   },
   "active": "43106a041c769af5",
   "lastOpenFiles": [
-    "01-concepts/kubernetes/kubernetes-architecture-explained.md",
     "01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md",
+    "01-concepts/kubernetes/kubernetes-architecture-explained.md",
     "01-concepts/kubernetes/raft-etcd-quorum-vs-repmgr.md",
     "99-scratch/k8s-manual-commands.md",
     "01-concepts/kubernetes/assets/kubernetes-architecture-explained/scheduler-logic.gif",
