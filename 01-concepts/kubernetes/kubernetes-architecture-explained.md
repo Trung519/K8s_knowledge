@@ -443,34 +443,110 @@ Hiểu ngắn gọn:
 
 <span style="color:red">Kubelet không phải là component quyết định cluster phải scale lên bao nhiêu pod; quyết định reconcile desired state ở mức cluster là việc của controller, còn kubelet là bên hiện thực phần việc được giao trên node.</span>
 
-### kubelet nhận podSpec từ đâu
+## Ghi chú tổng hợp: Pod, Pod thông thường, Static Pod, Mirror Pod và Bootstrap trong Kubernetes
 
-Bài nhắc 4 nguồn:
+Trong Kubernetes, **Pod là đơn vị triển khai nhỏ nhất**. Một Pod là “vỏ bọc” để chạy một hoặc nhiều container cùng nhau trên **cùng một node**, cùng chia sẻ một số tài nguyên như network namespace và có thể chia sẻ volume. Khi học Kubernetes, nên hiểu rằng Kubernetes không quản lý container rời rạc trước tiên, mà quản lý **Pod** như đơn vị cơ bản của workload. ([Kubernetes][1])
 
-- API server
-- file
-- HTTP endpoint
-- HTTP server
+Muốn hiểu đúng `Pod thông thường` và `Static Pod`, trước hết phải tách rõ **hai con đường tạo Pod hoàn toàn khác nhau**. Con đường thứ nhất là đi **qua Kubernetes API**. Khi dùng `kubectl apply -f ...`, dù manifest nằm ở file local hay ở URL, `kubectl` vẫn đọc manifest rồi gọi **Kubernetes API** để tạo object trong cluster. Tài liệu chính thức của Kubernetes nêu rõ các Kubernetes object là thực thể bền vững trong hệ thống, và khi dùng `kubectl`, CLI sẽ thực hiện các API calls cần thiết để tạo hoặc cập nhật object đó. Vì thế, `kubectl apply -f pod.yaml` và `kubectl apply -f https://.../pod.yaml` đều có cùng bản chất: chúng tạo object thông qua **API server**, chứ không biến Pod đó thành static pod. ([Kubernetes][2])
 
-Ví dụ quan trọng nhất là `static pod`.
+Khi một **Pod thông thường** được tạo qua API server, Kubernetes control plane sẽ xử lý nó theo luồng chuẩn. Nếu đó là `kind: Pod`, đó là một **bare Pod** tạo trực tiếp qua API; tài liệu Kubernetes xác nhận bạn có thể tạo bare Pod, dù cách này ít được khuyến nghị cho production. Nếu đó là `Deployment`, `StatefulSet`, `DaemonSet`, `Job` hoặc các workload object khác, thì controller tương ứng sẽ quản lý vòng đời của Pod. Sau đó, scheduler sẽ gán Pod vào một node phù hợp, và kubelet trên node đó sẽ chạy các container theo PodSpec đã được giao. Nói ngắn gọn: với Pod thông thường, **kubelet là bên thực thi trên node**, nhưng **không phải là bên tự đọc file manifest gốc của bạn**. ([Kubernetes][3])
 
-### Static pod
+Ví dụ, nếu bạn có file sau và chạy `kubectl apply -f pod.yaml`:
 
-`static pod`:
-
-- do kubelet quản lý trực tiếp
-- không do API server quản lý theo nghĩa thông thường
-
-Use case rất quan trọng:
-
-- khi bootstrap control plane
-- kubelet đọc manifest tại:
-
-```text
-/etc/kubernetes/manifests
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-pod
+spec:
+  containers:
+    - name: nginx
+      image: nginx
 ```
 
-- từ đó khởi động `api-server`, `scheduler`, `controller-manager` dạng static pod
+thì Pod này là **Pod thông thường tạo qua API server**. Scheduler sẽ chọn node, rồi kubelet trên node đó chạy nó. Pod này **không phải static pod**, dù manifest của nó cũng là `kind: Pod`. Điểm quyết định không phải là “kind là Pod”, mà là **manifest được đưa vào cluster bằng đường nào**. Nếu đi qua `kubectl` thì đó là object được control plane quản lý; nếu kubelet tự lấy manifest từ cấu hình static pod thì đó mới là static pod. ([Kubernetes][2])
+
+Con đường thứ hai là **kubelet tự đọc manifest static pod**. Đây mới là cơ chế của `Static Pod`. Tài liệu chính thức của Kubernetes mô tả rất rõ: static pod là Pod được **kubelet trên một node cụ thể quản lý trực tiếp**, không đi theo luồng control plane thông thường. Static pod luôn gắn chặt với đúng kubelet của node đó; kubelet theo dõi static pod và tự khởi động lại nếu nó lỗi. Vì vậy, cách hiểu đúng là: static pod không phải Pod được “apply bình thường”, mà là Pod do kubelet tự lấy manifest và tự giữ chạy trên node của nó. ([Kubernetes][4])
+
+Kubelet có hai cách chính để lấy manifest static pod. Cách phổ biến nhất là cấu hình `staticPodPath`, tức là trỏ kubelet tới **một thư mục** hoặc **một file Pod tĩnh** trên local filesystem. Tài liệu cấu hình kubelet ghi rõ `staticPodPath` là đường dẫn tới thư mục chứa local static pods, hoặc đường dẫn tới một static pod file duy nhất. Trang hướng dẫn static pod cũng nêu rõ manifest ở đây phải là **standard Pod definitions in JSON or YAML format**, và kubelet sẽ **quét định kỳ** thư mục đó để tạo hoặc xóa static pod khi file xuất hiện hoặc biến mất. Nghĩa là, nếu bạn muốn chạy static pod theo kiểu file local, manifest phải nằm **đúng path mà kubelet đang được cấu hình để theo dõi**. Path đó thường thấy là `/etc/kubernetes/manifests`, nhất là trong các cluster dựng bằng kubeadm, nhưng về nguyên tắc kỹ thuật thì kubelet có thể được cấu hình sang path khác. ([Kubernetes][5])
+
+Cách thứ hai là manifest static pod được **host trên web**. Kubernetes docs ghi rằng kubelet có thể định kỳ tải một file được chỉ định qua `--manifest-url=<URL>` và diễn giải nó như một file JSON/YAML chứa **Pod definitions**. Nó sẽ tải lại theo chu kỳ; nếu danh sách static pods thay đổi thì kubelet áp dụng thay đổi đó. Vì vậy, khi static pod lấy từ URL, kubelet **không biết ngay lập tức** nếu nội dung ở URL bị đổi; kubelet chỉ biết ở lần kiểm tra lại tiếp theo. Đây là cơ chế **polling định kỳ**, không phải webhook. ([Kubernetes][4])
+
+Một điểm rất dễ nhầm là: **`kubectl apply -f https://...` không liên quan gì tới `staticPodURL`**. Hai việc này khác nhau hoàn toàn. `kubectl apply -f https://...` nghĩa là **kubectl đọc manifest từ URL rồi gửi object vào API server**. Còn `staticPodURL` hay `--manifest-url` là **kubelet của node** tự đi lấy manifest từ URL đó để chạy static pod. Cùng là “URL”, nhưng một bên là **nguồn dữ liệu cho kubectl**, bên kia là **nguồn dữ liệu cho kubelet**. Vì vậy, nếu bạn `kubectl apply` một URL chứa `Deployment`, `StatefulSet` hay `Pod`, tất cả các object đó vẫn đi qua API server và được quản lý theo cơ chế bình thường của control plane. Nó chỉ thành static pod nếu chính kubelet được cấu hình để lấy manifest từ URL đó. ([Kubernetes][2])
+
+Vì manifest static pod là **Pod definitions**, nên không nên nghĩ rằng có thể đặt `Deployment` hoặc `StatefulSet` vào `staticPodPath` rồi mong kubelet “chuyển hộ” cho control plane. Cơ chế static pod không phải là một đường tắt để nạp mọi loại Kubernetes object. Nó là cơ chế để kubelet trực tiếp đọc và chạy **Pod manifest**. Còn `Deployment` là workload API object dùng để quản lý một tập Pod cho ứng dụng stateless; `StatefulSet` là workload API object dùng để quản lý Pod cho ứng dụng stateful, với danh tính và thứ tự ổn định. Các workload object kiểu này thuộc về luồng control plane và Kubernetes API, không phải luồng static pod của kubelet. ([Kubernetes][4])
+
+Để thấy rõ sự khác nhau, có thể nhìn ba ví dụ sau.
+
+Ví dụ thứ nhất là **Pod thông thường qua API server**:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-api-pod
+spec:
+  containers:
+    - name: web
+      image: nginx
+```
+
+Nếu bạn chạy `kubectl apply -f demo-api-pod.yaml`, đây là Pod được tạo trong API server. Scheduler chọn node, kubelet chạy Pod. Đây **không phải static pod**. ([Kubernetes][2])
+
+Ví dụ thứ hai là **Deployment thông thường qua API server**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deploy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: web
+          image: nginx
+```
+
+Nếu bạn `kubectl apply -f web-deploy.yaml` hoặc `kubectl apply -f https://.../web-deploy.yaml`, `Deployment` sẽ được tạo qua API server; Deployment controller quản lý ReplicaSet và Pod; scheduler chọn node; kubelet chỉ chạy các Pod được giao. ([Kubernetes][6])
+
+Ví dụ thứ ba là **Static Pod chuẩn**. Đây là mẫu sát với ví dụ chính thức của Kubernetes cho filesystem-hosted static pod:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: static-web
+  labels:
+    role: myrole
+spec:
+  containers:
+    - name: web
+      image: nginx
+      ports:
+        - name: web
+          containerPort: 80
+          protocol: TCP
+```
+
+Nếu file này được đặt vào đúng thư mục mà kubelet đang theo dõi, chẳng hạn `/etc/kubernetes/manifests/static-web.yaml`, và kubelet của node đó được cấu hình `staticPodPath` trỏ vào thư mục này, thì kubelet sẽ tự tạo static pod `static-web` trên chính node đó. Đây là **ví dụ static pod đúng nghĩa**. ([Kubernetes][4])
+
+Khi static pod chạy, kubelet thường sẽ cố tạo một **mirror pod** trên API server. Mirror pod chỉ là bản phản chiếu để bạn còn nhìn thấy pod đó qua `kubectl get pods`. Nhưng nó không phải nơi “quản lý thật” static pod. Tài liệu chính thức nói rõ static pod có thể nhìn thấy trên API server, nhưng **không thể điều khiển từ đó**. Nếu bạn xóa mirror pod bằng `kubectl delete`, kubelet vẫn không xóa static pod thật; nó sẽ tiếp tục giữ static pod chạy theo manifest local hoặc URL mà nó đang theo dõi. ([Kubernetes][4])
+
+Một điểm nữa cần nhớ là static pod có vài giới hạn quan trọng. Tài liệu chính thức nêu rằng `spec` của static pod **không được tham chiếu tới các API objects khác** như `ServiceAccount`, `ConfigMap`, `Secret`… và static pod cũng không hỗ trợ ephemeral containers. Điều này giải thích vì sao static pod không phải cách triển khai ứng dụng thông thường trong production; nó chủ yếu phù hợp cho những thành phần nền tảng rất sớm, rất sát node, hoặc trong giai đoạn bootstrap control plane. ([Kubernetes][4])
+
+Khái niệm **bootstrap control plane** nên hiểu là giai đoạn dựng các thành phần cốt lõi đầu tiên của cluster từ trạng thái ban đầu “chưa có bộ não”. `kubeadm init` giải quyết bài toán này bằng cách **sinh ra các static pod manifests** cho `kube-apiserver`, `kube-controller-manager`, `kube-scheduler`, và cả `etcd` nếu không dùng external etcd. Các manifest này được ghi vào `/etc/kubernetes/manifests`, và kubelet sẽ theo dõi thư mục đó để tạo các control plane pods khi khởi động. Khi các pod control plane lên xong, cluster mới thật sự “sống dậy” và các workload bình thường mới tiếp tục đi theo luồng API server như thường lệ. ([Kubernetes][7])
+
+Ở đây cũng cần tách riêng một nghĩa khác của từ **bootstrap** để tránh nhầm. Ngoài bootstrap control plane, Kubernetes còn có **bootstrap token** và **TLS bootstrap** cho node mới join cluster. Tài liệu chính thức nói bootstrap token là bearer token dùng khi tạo cluster mới hoặc khi node mới tham gia cluster; còn `kubeadm join` dùng token này để kubelet tạm thời xác thực với control plane, gửi certificate signing request, rồi nhận danh tính chính thức của node. Đây là bootstrap ở nghĩa **gia nhập cluster**, không phải bootstrap ở nghĩa **dựng control plane ban đầu**. ([Kubernetes][8])
+
+Từ toàn bộ phần trên, có thể chốt cách học nhanh như sau. Nếu bạn thấy `kubectl apply`, hãy nghĩ đến **API server và control plane**. Nếu bạn thấy `staticPodPath`, `--pod-manifest-path`, `staticPodURL` hoặc `--manifest-url`, hãy nghĩ đến **kubelet tự đọc Pod manifest và tự chạy Pod trên một node cụ thể**. Nếu bạn thấy một Pod có đuôi tên gắn hostname node và xuất hiện trong `kubectl get pods` nhưng không sửa được từ API server như Pod bình thường, đó nhiều khả năng là **mirror pod của một static pod**. Và nếu bạn thấy các manifest control plane nằm trong `/etc/kubernetes/manifests`, đó là dấu hiệu rất điển hình của **bootstrap control plane bằng static pods** trong kubeadm. ([Kubernetes][4])
 
 ### Những điểm kỹ thuật cần nhớ về kubelet
 
@@ -552,80 +628,118 @@ Nên có thể nhớ như này:
 
 ![Kube Proxy Diagram](assets/kubernetes-architecture-explained/kube-proxy.png)
 
-Muốn hiểu `kube-proxy` phải hiểu sơ bộ:
+Muốn hiểu `kube-proxy` thì nên tách rõ ba khái niệm:
 
 - `Service`
-- `Endpoint`
+- `EndpointSlice`
+- rule mạng trên node
 
-### Nhắc nhanh về Service và Endpoint
+### Nhắc nhanh về Service và EndpointSlice
 
 `Service`:
 
-- là cách expose một nhóm pod
-- khi tạo service sẽ có `ClusterIP`
-- `ClusterIP` chỉ truy cập được trong cluster
+- là địa chỉ logic ổn định để truy cập một nhóm pod
+- thường có `ClusterIP`
+- `ClusterIP` chủ yếu dùng cho service discovery và routing trong cluster
 
-`Endpoint`:
+`EndpointSlice`:
 
-- chứa danh sách IP và port của nhóm pod phía sau service
+- chứa danh sách backend endpoint phía sau `Service`
+- mỗi endpoint thường trỏ tới IP và port của pod backend
 
-Bài nhắc một chi tiết dễ quên:
+Điểm dễ nhầm:
 
-- ==không ping được `ClusterIP` như ping pod IP==
-- vì `ClusterIP` dùng cho service discovery/routing, không phải kiểu IP "host thật"
+- `ClusterIP` không phải một host hay network interface thật
+- `Service` không phải một process đứng giữa để tự nhận request rồi forward
 
 ### kube-proxy làm gì
 
-`kube-proxy`:
+`kube-proxy` là thành phần hiện thực `Service` ở mức mạng trên từng node.
 
-- chạy trên mọi node dưới dạng `DaemonSet`
-- là thành phần hiện thực khái niệm `Service`
-- tạo rule mạng để chuyển traffic từ service sang backend pods
-- xử lý load balancing ở mức network
+Nó làm việc theo cách đơn giản như sau:
 
-Nó chủ yếu proxy:
+1. watch `Service` và `EndpointSlice` từ `API server`
+2. tạo hoặc cập nhật rule mạng trên node
+3. khi có traffic đi tới `ClusterIP:port` của Service, rule đó sẽ chuyển tiếp traffic tới một backend phù hợp
 
-- `TCP`
-- `UDP`
-- `SCTP`
+Nói dễ hiểu:
 
-Và:
+- `Service` đưa ra địa chỉ logic ổn định
+- `kube-proxy` biến địa chỉ logic đó thành đường đi packet thật
+- việc này diễn ra ở mức mạng `L3/L4`, không phải ở tầng HTTP business logic
 
-- ==không hiểu HTTP ở tầng ứng dụng==
+### Luồng traffic dễ nhớ
 
-### Cơ chế hoạt động
+#### 1. User từ bên ngoài gọi web app
 
-1. kube-proxy hỏi API server để biết `Service`, `Endpoint`, IP và port
-2. theo dõi thay đổi của service và endpoint
-3. tạo hoặc cập nhật rule routing trên node
+```text
+User -> Ingress Controller -> Service -> kube-proxy rules trên node -> Pod backend
+```
 
-### Các mode mà bài liệt kê
+Ý chính:
 
-1. `IPTables`
-2. `NFTables`
-3. `Userspace` (legacy, không khuyến nghị)
-4. `Kernelspace` (Windows)
+- `Ingress` quyết định request web từ ngoài sẽ đi vào `Service` nào
+- sau đó `kube-proxy` giúp traffic đi từ `Service` tới pod backend phù hợp
 
-Ghi chú quan trọng từ bài:
+#### 2. Pod trong cluster gọi Service khác
 
-- `IPTables` được mô tả là mode mặc định
-- khi kết nối đã được thiết lập thì traffic sẽ tiếp tục vào cùng backend pod cho đến khi connection đóng
-- `NFTables` nhắm tới cải thiện giới hạn hiệu năng/scalability của `iptables`, đặc biệt trong cluster lớn
+```text
+Pod A -> DNS/ClusterIP của Service B -> kube-proxy rules -> Pod backend của Service B
+```
 
-### Vì sao kube-proxy được ghi là "optional"
+Ý chính:
 
-==Bài nhấn mạnh rằng kube-proxy không còn là bắt buộc trong mọi cluster hiện đại.==
+- trường hợp này không cần `Ingress`
+- `kube-proxy` vẫn là bên hiện thực đường đi từ `Service` tới backend
 
-Lý do:
+### Bảng phân biệt nhanh: kube-proxy và kubelet
 
-- một số CNI hiện đại đã tự triển khai packet forwarding và load balancing
-- khi đó cluster vẫn networking bình thường mà không cần kube-proxy
+| Thành phần | Vai trò chính | Nhận thông tin từ đâu | Làm gì thật sự |
+|---|---|---|---|
+| `kube-proxy` | Data plane của `Service` | `Service` và `EndpointSlice` từ `API server` | Cài rule mạng để chuyển traffic từ `ClusterIP:port` sang backend endpoint |
+| `kubelet` | Workload execution trên node | `PodSpec` chủ yếu từ `API server` | Đảm bảo pod/container được tạo, chạy, probe và báo trạng thái |
 
-Ví dụ điển hình:
+Cách nhớ nhanh:
+
+- `kube-proxy` lo đường đi của traffic
+- `kubelet` lo pod có thực sự chạy trên node hay không
+
+### Các mode của kube-proxy
+
+Trên Linux, các mode thường gặp là:
+
+1. `iptables`
+2. `ipvs`
+3. `nftables`
+
+Trên Windows có mode `kernelspace`.
+
+Điểm cần nhớ:
+
+- `iptables` là mode rất phổ biến
+- `ipvs` và `nftables` là các lựa chọn khác tùy môi trường và version
+- `userspace` là mode cũ, hiện nay không nên xem là mode thực tế nữa
+
+### Vì sao kube-proxy được ghi là optional
+
+`kube-proxy` là lựa chọn mặc định trong rất nhiều cluster, nhưng không còn là lựa chọn duy nhất.
+
+Một số hệ mạng hiện đại có thể thay vai trò này bằng implementation khác, ví dụ:
 
 - `Cilium`
-- dùng `eBPF`
-- xử lý Service traffic trực tiếp trong kernel Linux
+
+Vì vậy:
+
+- không phải Kubernetes bỏ `kube-proxy`
+- mà đúng hơn là một số cluster có thể chạy không cần `kube-proxy` vì đã có thành phần khác thay thế chức năng service proxy
+
+### Câu chốt để nhớ
+
+- `Ingress` quyết định request từ ngoài vào `Service` nào
+- `Service` cung cấp địa chỉ logic ổn định cho nhóm pod backend
+- `kube-proxy` biến địa chỉ logic đó thành forwarding thật ở mức mạng
+- `kubelet` đảm bảo pod/container thực sự được chạy trên node
+
 
 ## 8. Container runtime
 
@@ -644,70 +758,260 @@ Trách nhiệm chính:
 
 #### CRI
 
-`Container Runtime Interface` là:
+`Container Runtime Interface` là giao diện để `kubelet` nói chuyện với container runtime.
 
-- bộ API cho phép Kubernetes giao tiếp với runtime
-- giúp nhiều runtime có thể thay thế cho nhau
-- định nghĩa cách tạo, start, stop, delete container
-- quản lý image và networking liên quan container
+Ý chính:
+
+- `kubelet` không muốn phụ thuộc cứng vào một runtime duy nhất
+- nhờ `CRI`, kubelet có thể làm việc với nhiều runtime khác nhau
+- runtime sẽ nhận lệnh kiểu pull image, tạo container, start, stop, xóa container
 
 #### OCI
 
-`Open Container Initiative` là:
+`OCI` không phải một chương trình cụ thể.
 
-- bộ chuẩn cho format container và runtime
+Nó là một **bộ tiêu chuẩn chung** để hệ sinh thái container cùng làm việc theo một "luật chơi" thống nhất.
 
-### Mối quan hệ giữa kubelet và runtime
+Có thể hình dung OCI gồm các ý lớn:
 
-- kubelet giao tiếp với runtime thông qua `CRI APIs`
-- runtime đảm nhiệm phần triển khai container ở node
-- kubelet lấy thông tin container từ runtime rồi phản ánh ngược lên control plane
+- image được đóng gói theo chuẩn nào
+- runtime chạy container theo chuẩn nào
+- image được phân phối theo chuẩn nào
 
-### Ví dụ workflow với CRI-O
+Nói ngắn gọn:
 
-Theo bài, luồng mức cao là:
+- image = bộ đồ nghề đã đóng gói sẵn của ứng dụng
+- runtime = bên thật sự chạy bộ đồ nghề đó thành process
+- OCI = bộ tiêu chuẩn để image và runtime hiểu nhau
 
-1. API server có request tạo pod mới
-2. kubelet nói chuyện với `CRI-O`
-3. `CRI-O` kiểm tra và pull image cần thiết
-4. `CRI-O` sinh `OCI runtime specification`
-5. `CRI-O` gọi runtime tương thích OCI như `runc` để start process container
+Ví dụ đời thường:
 
-==Nhớ ngắn gọn: kubelet ra lệnh, container runtime thi công.==
+- bản vẽ tiêu chuẩn = `OCI`
+- bộ gỗ đã cắt sẵn, đóng hộp = container image
+- người thợ lắp tủ = runtime như `runc`, `crun`
+
+Nếu không có OCI:
+
+- mỗi nơi đóng image một kiểu
+- mỗi runtime chạy một kiểu
+- rất khó tương thích chéo
+
+Nhờ OCI:
+
+- image tạo ở nơi này có thể được runtime ở nơi khác chạy đúng cách
+
+### Kubernetes liên quan gì tới OCI
+
+Kubernetes không trực tiếp tự chạy container.
+
+Trên node, thành phần thật sự làm việc đó là `container runtime`.
+
+Vai trò nên nhớ:
+
+- `kubelet` = quản lý node, nhận desired state và đảm bảo pod phải tồn tại
+- `CRI` = giao diện chuẩn giữa `kubelet` và runtime
+- `container runtime` = bên pull image, tạo container, start process
+- `OCI runtime` = runtime mức thấp như `runc`, `crun`, chạy container theo chuẩn OCI
+
+Câu dễ nhớ:
+
+==`kubelet` là quản đốc công trình. Runtime là đội thi công. `OCI` là bộ tiêu chuẩn xây dựng.==
+
+### Quan hệ giữa kubelet, CRI-O, OCI và runc
+
+Phần này rất dễ nhầm, nên tách theo từng lớp:
+
+#### Lớp 1: kubelet
+
+- là agent chạy trên mỗi node
+- theo dõi xem node có đang chạy đúng pod mà control plane yêu cầu hay không
+
+#### Lớp 2: CRI
+
+- là giao diện để kubelet không bị khóa vào một runtime cụ thể
+- giúp kubelet nói chuyện với runtime theo cách thống nhất
+
+#### Lớp 3: CRI-O hoặc containerd
+
+- đây là container runtime cấp cao tương thích với `CRI`
+- nó là cầu nối giữa kubelet và OCI-compatible runtime
+
+#### Lớp 4: runc / crun / Kata
+
+- đây là OCI runtime cấp thấp
+- nó thật sự tạo namespace, cgroup, mount filesystem và start process container
+
+### Workflow thật sự khi tạo Pod
+
+Lấy ví dụ bạn apply một pod chạy `nginx`.
+
+#### Bước 1: API server nhận yêu cầu
+
+- bạn gửi YAML lên cluster
+- API server lưu desired state rằng phải có pod đó
+
+#### Bước 2: Scheduler chọn node
+
+- scheduler chọn node phù hợp để đặt pod
+
+#### Bước 3: kubelet trên node thấy có pod mới phải chạy
+
+- kubelet đọc thông tin pod được gán cho node đó
+
+#### Bước 4: kubelet gọi runtime qua CRI
+
+Ví dụ runtime là `CRI-O`, kubelet sẽ yêu cầu:
+
+- tạo sandbox cho pod
+- pull image nếu chưa có
+- tạo và chạy container
+
+#### Bước 5: CRI-O chuẩn bị thông tin chạy
+
+- `CRI-O` kiểm tra image
+- pull image nếu cần
+- tạo cấu hình theo `OCI runtime specification`
+
+#### Bước 6: CRI-O gọi `runc`
+
+`runc` là bên "bấm nút chạy" ở mức thấp:
+
+- tạo process
+- tạo namespace
+- gắn filesystem
+- đặt resource limit
+- start container
+
+#### Bước 7: kubelet theo dõi lại trạng thái
+
+- kubelet lấy trạng thái từ runtime
+- rồi báo ngược về control plane
+
+### Ví dụ cực dễ hình dung
+
+Giả sử bạn có pod sau:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+```
+
+Khi pod này được tạo, có thể hình dung chuỗi việc diễn ra như sau:
+
+- Kubernetes: "Tôi muốn có pod `demo-nginx`"
+- Scheduler: "Cho nó vào node A"
+- kubelet ở node A: "`CRI-O` ơi, làm pod này chạy đi"
+- `CRI-O`: "Tôi sẽ lấy image `nginx:latest` và chuẩn bị cấu hình OCI"
+- `runc`: "Tôi tạo process nginx bên trong container"
+- kubelet: "Pod đã chạy, tôi báo lại trạng thái"
+
+Vì vậy câu này rất đúng:
+
+==`kubelet` ra lệnh, container runtime thi công.==
+
+Chỉ cần bổ sung thêm:
+
+==`OCI` là bộ tiêu chuẩn để việc thi công đó thống nhất.==
 
 ## Addon components
 
-Bài viết nói rõ:
+Chỉ có core components thì cluster mới chỉ ở mức "sống được".
 
-- chỉ core components thì cluster chưa đủ "fully operational"
-- cần thêm addon tùy use case
+Muốn cluster dùng tiện và đầy đủ trong thực tế, thường cần thêm các addon.
 
-Các addon phổ biến mà bài liệt kê:
+Hiểu ngắn gọn:
+
+- core components = nội tạng bắt buộc
+- addons = các bộ phận bổ sung để cluster dùng tiện hơn, quan sát được và kết nối được
+
+Các addon phổ biến:
 
 1. `CNI Plugin`
 2. `CoreDNS`
 3. `Metrics Server`
 4. `Kubernetes Dashboard`
 
-### CoreDNS
+### 1. CNI Plugin
 
-Vai trò:
+`CNI` là phần lo mạng cho pod.
 
-- DNS server bên trong cluster
-- bật service discovery dựa trên DNS
+Nếu chưa có plugin mạng phù hợp:
 
-### Metrics Server
+- pod có thể chạy
+- nhưng giao tiếp mạng giữa pod với pod hoặc pod với service có thể không hoạt động đúng
 
-Vai trò:
+Ví dụ:
 
-- thu thập resource metrics của node và pod
-- phục vụ quan sát và autoscaling ở mức cơ bản
+- Pod A là backend
+- Pod B là frontend
+- frontend muốn gọi backend qua mạng nội bộ
 
-### Kubernetes Dashboard
+Nếu chưa có `CNI`, cluster giống như có hai căn phòng nhưng chưa kéo dây mạng.
 
-Vai trò:
+=> `CNI` = thợ đi dây mạng cho pod
 
-- giao diện web để quản lý object
+### 2. CoreDNS
+
+`CoreDNS` là DNS server trong cluster để pod tra tên service.
+
+Ví dụ:
+
+- có service tên `my-api.default.svc.cluster.local`
+- từ pod frontend, ứng dụng chỉ cần gọi `http://my-api`
+
+`CoreDNS` sẽ giúp phân giải tên đó ra IP của service.
+
+Nếu không có `CoreDNS`:
+
+- pod khó gọi nhau bằng tên
+- phải nhớ IP
+- mà IP có thể thay đổi
+
+=> `CoreDNS` = danh bạ nội bộ của cluster
+
+### 3. Metrics Server
+
+`Metrics Server` cung cấp số liệu dùng tài nguyên ngắn hạn như CPU và memory của pod hoặc node.
+
+Nó thường phục vụ:
+
+- `kubectl top`
+- quan sát nhanh tình trạng tài nguyên
+- autoscaling kiểu cơ bản
+
+Ví dụ:
+
+```bash
+kubectl top pods
+kubectl top nodes
+```
+
+Nếu không có `Metrics Server`:
+
+- vẫn chạy pod được
+- nhưng khó xem nhanh pod nào đang ăn CPU hoặc RAM
+- `HPA` thường thiếu dữ liệu CPU/memory để scale
+
+=> `Metrics Server` = đồng hồ đo sinh hiệu của cluster
+
+### 4. Kubernetes Dashboard
+
+`Dashboard` là giao diện web để xem và quản lý tài nguyên Kubernetes.
+
+Ví dụ:
+
+- thay vì chỉ dùng `kubectl get pods -A`
+- bạn có thể mở dashboard để xem namespace nào đang có pod lỗi
+- deployment nào đang thiếu replica
+- workload nào đang chạy
+
+=> `Dashboard` = bảng điều khiển trực quan
 
 ## 9. CNI Plugin
 
@@ -899,3 +1203,12 @@ Theo bài:
 8. `CNI plugin` lo networking giữa các pod.
 9. `TLS` và `PKI` là nền tảng bảo mật giao tiếp nội bộ cluster.
 10. Toàn bộ Kubernetes vận hành theo mô hình distributed system + watch + reconcile.
+
+[1]: https://kubernetes.io/docs/concepts/workloads/pods/?utm_source=chatgpt.com "Pods"
+[2]: https://kubernetes.io/docs/concepts/overview/working-with-objects/?utm_source=chatgpt.com "Objects In Kubernetes"
+[3]: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/?utm_source=chatgpt.com "ReplicaSet"
+[4]: https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/?utm_source=chatgpt.com "Create static Pods"
+[5]: https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/?utm_source=chatgpt.com "Kubelet Configuration (v1beta1)"
+[6]: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/?utm_source=chatgpt.com "Deployments"
+[7]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/?utm_source=chatgpt.com "kubeadm init"
+[8]: https://kubernetes.io/docs/reference/access-authn-authz/bootstrap-tokens/?utm_source=chatgpt.com "Authenticating with Bootstrap Tokens"

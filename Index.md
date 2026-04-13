@@ -43,9 +43,13 @@ status: active
 
 | Folder | File | Title | Type | Query keys |
 |---|---|---|---|---|
+| `01-concepts/kubernetes` | `cert-manager-ingress-tls-flow-and-issuers.md` | cert-manager, Ingress và quy trình cấp TLS trong Kubernetes | `concept-note` | `cert-manager`, `ingress`, `tls`, `certificate`, `issuer`, `clusterissuer`, `acme`, `lets-encrypt` |
 | `01-concepts/kubernetes` | `configmap-secret-mount-into-pod.md` | ConfigMap, Secret và cơ chế mount vào Pod | `concept-note` | `configmap`, `secret`, `mount`, `env`, `volume`, `pod` |
 | `01-concepts/kubernetes` | `db-deployment-pvc-vs-statefulset.md` | DB Deployment + PVC vs DB StatefulSet | `concept-note` | `database`, `deployment`, `pvc`, `statefulset`, `storage` |
+| `01-concepts/kubernetes` | `kubeconfig-user-serviceaccount-rbac-runasuser.md` | Kubeconfig, User, ServiceAccount, RBAC và runAsUser trong Kubernetes | `concept-note` | `kubeconfig`, `user`, `serviceaccount`, `rbac`, `authentication`, `authorization`, `runasuser` |
 | `01-concepts/kubernetes` | `kubernetes-architecture-explained.md` | Kiến trúc Kubernetes từ control plane đến worker node | `concept-note` | `kubernetes`, `architecture`, `control-plane`, `worker-node`, `kubelet`, `etcd`, `scheduler` |
+| `01-concepts/kubernetes` | `kubernetes-object-resource-api-resource-type-kind-custom-resource.md` | Note học tập: Kubernetes Object, Resource, API Resource Type, Kind, Custom Resource | `concept-note` | `object`, `resource`, `kind`, `api-resource-type`, `custom-resource`, `crd`, `manifest`, `kubectl` |
+| `01-concepts/kubernetes` | `kubernetes-pod-core-concepts-practical-examples.md` | Kubernetes Pod - khái niệm cốt lõi, YAML và ví dụ thực hành | `concept-note` | `kubernetes`, `pod`, `multi-container`, `pod-lifecycle`, `kubectl`, `port-forward`, `exec` |
 | `01-concepts/kubernetes` | `pod-priority-preemption-pdb-qos.md` | Pod Priority, Preemption, PDB và QoS trong Kubernetes | `concept-note` | `pod-priority`, `priorityclass`, `preemption`, `pdb`, `qos`, `eviction`, `scheduler` |
 | `01-concepts/kubernetes` | `raft-etcd-quorum-vs-repmgr.md` | RAFT, etcd quorum và khác biệt với repmgr | `concept-note` | `raft`, `etcd`, `quorum`, `leader-election`, `consensus`, `repmgr` |
 | `02-architecture/postgresql-ha` | `bitnami-images-in-postgresql-statefulset.md` | Bitnami Images trong PostgreSQL StatefulSet | `reference-note` | `postgresql`, `bitnami`, `image`, `statefulset`, `high-availability` |
@@ -58,25 +62,37 @@ status: active
 1. `01-concepts/kubernetes/kubernetes-architecture-explained.md`
 Vai trò: note nền để nắm cấu trúc control plane, worker node, networking và workflow tổng thể của cluster.
 
-2. `01-concepts/kubernetes/raft-etcd-quorum-vs-repmgr.md`
+2. `01-concepts/kubernetes/kubernetes-object-resource-api-resource-type-kind-custom-resource.md`
+Vai trò: hiểu object, resource, kind và manifest trước khi đi sâu vào workload cụ thể như Pod, Deployment hay StatefulSet.
+
+3. `01-concepts/kubernetes/kubernetes-pod-core-concepts-practical-examples.md`
+Vai trò: note nền để hiểu Pod là gì, Pod chia sẻ network/volume ra sao, cách đọc Pod YAML và cách debug Pod bằng `kubectl`.
+
+4. `01-concepts/kubernetes/kubeconfig-user-serviceaccount-rbac-runasuser.md`
+Vai trò: phân biệt identity, phân quyền API và quyền Linux bên trong container trước khi đọc các note về workload và manifest.
+
+5. `01-concepts/kubernetes/raft-etcd-quorum-vs-repmgr.md`
 Vai trò: note nền để hiểu vì sao etcd dùng quorum, RAFT commit như thế nào, và nó khác repmgr ở đâu.
 
-3. `02-architecture/postgresql-ha/postgresql-ha-statefulset-longhorn-repmgr.md`
+6. `02-architecture/postgresql-ha/postgresql-ha-statefulset-longhorn-repmgr.md`
 Vai trò: note trục chính để hiểu 3 lớp Kubernetes, storage và database.
 
-4. `01-concepts/kubernetes/db-deployment-pvc-vs-statefulset.md`
+7. `01-concepts/kubernetes/db-deployment-pvc-vs-statefulset.md`
 Vai trò: phân biệt workload stateful và cách chọn controller cho database.
 
-5. `01-concepts/kubernetes/configmap-secret-mount-into-pod.md`
+8. `01-concepts/kubernetes/configmap-secret-mount-into-pod.md`
 Vai trò: hiểu cách truyền cấu hình vào Pod trước khi đọc manifest HA chi tiết.
 
-6. `01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md`
+9. `01-concepts/kubernetes/cert-manager-ingress-tls-flow-and-issuers.md`
+Vai trò: hiểu quan hệ giữa Ingress, ingress controller, cert-manager, TLS Secret, Issuer và ACME trước khi đi vào các case public HTTPS hoặc internal PKI.
+
+10. `01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md`
 Vai trò: hiểu rõ quan hệ giữa scheduler priority, preemption, PDB và QoS khi cluster thiếu tài nguyên.
 
-7. `02-architecture/postgresql-ha/bitnami-images-in-postgresql-statefulset.md`
+11. `02-architecture/postgresql-ha/bitnami-images-in-postgresql-statefulset.md`
 Vai trò: giải thích vì sao tutorial PostgreSQL HA dùng image Bitnami và script sẵn có.
 
-8. `03-runbooks/longhorn/longhorn-network-iscsi-node3-debug-runbook.md`
+12. `03-runbooks/longhorn/longhorn-network-iscsi-node3-debug-runbook.md`
 Vai trò: tài liệu debug thực chiến cho case Longhorn / network / iSCSI.
 
 ## Quy tắc rename an toàn
