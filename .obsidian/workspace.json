@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01-concepts/kubernetes/kubernetes-pod-core-concepts-practical-examples.md",
+                "file": "01-concepts/kubernetes/Ingress tutorial and NodePort - Loadbalancer.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "kubernetes-pod-core-concepts-practical-examples"
+              "title": "Ingress tutorial and NodePort - Loadbalancer"
             }
           }
         ]
@@ -185,9 +185,16 @@
   },
   "active": "43106a041c769af5",
   "lastOpenFiles": [
-    "Untitled.md",
-    "01-concepts/kubernetes/kubernetes-pod-core-concepts-practical-examples.md",
+    "01-concepts/kubernetes/Service account with long-lived token.md",
+    "01-concepts/kubernetes/Ingress tutorial and NodePort - Loadbalancer.md",
+    "01-concepts/kubernetes/Service account tutorial.md",
+    "01-concepts/kubernetes/Deployement tutorial.md",
+    "01-concepts/kubernetes/Daemonset.md",
+    "01-concepts/kubernetes/assets/kubernetes-pod-core-concepts-practical-examples/deployment.png",
     "01-concepts/kubernetes/kubernetes-object-resource-api-resource-type-kind-custom-resource.md",
+    "01-concepts/kubernetes/kubeconfig-user-serviceaccount-rbac-runasuser.md",
+    "01-concepts/kubernetes/kubernetes-pod-core-concepts-practical-examples.md",
+    "Untitled.md",
     "01-concepts/kubernetes/assets/kubernetes-pod-core-concepts-practical-examples/pod-associated-objects.gif",
     "01-concepts/kubernetes/assets/kubernetes-pod-core-concepts-practical-examples/pod-lifecycle-phases.png",
     "01-concepts/kubernetes/assets/kubernetes-pod-core-concepts-practical-examples/pod-anatomy.png",
@@ -195,7 +202,6 @@
     "01-concepts/kubernetes/assets/kubernetes-pod-core-concepts-practical-examples",
     "01-concepts/kubernetes/configmap-secret-mount-into-pod.md",
     "01-concepts/kubernetes/kubernetes-architecture-explained.md",
-    "01-concepts/kubernetes/kubeconfig-user-serviceaccount-rbac-runasuser.md",
     "01-concepts/kubernetes/assets/kubernetes-architecture-explained/resource-object.gif",
     "Index.md",
     "01-concepts/kubernetes/cert-manager-ingress-tls-flow-and-issuers.md",
@@ -207,7 +213,6 @@
     "01-concepts/kubernetes/Kubernetes - cert manager - secure pipeline process..md",
     "01-concepts/kubernetes/assets/kubernetes-architecture-explained/overview.png",
     "01-concepts/kubernetes/assets/kubernetes-architecture-explained/kube-proxy.png",
-    "01-concepts/kubernetes/assets/kubernetes-architecture-explained/kubelet.png",
     "99-scratch/k8s-manual-commands.md",
     "01-concepts/kubernetes/assets/kubernetes-architecture-explained",
     "01-concepts/kubernetes/assets",
@@ -225,9 +230,6 @@
     "Runbook debug Longhorn - Network - iSCSI node3.md",
     "PostgreSQL HA trên Kubernetes - StatefulSet Longhorn repmgr.md",
     "DB Deployment PVC vs StatefulSet.md",
-    "ConfigMap Secret và cơ chế mount vào Pod.md",
-    "Bitnami Images trong PostgreSQL StatefulSet.md",
-    "PostgreSQL HA tren Kubernetes - StatefulSet Longhorn repmgr.md",
-    "Welcome.md"
+    "ConfigMap Secret và cơ chế mount vào Pod.md"
   ]
 }
