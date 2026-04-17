@@ -48,6 +48,7 @@ status: active
 | `01-concepts/kubernetes` | `Daemonset.md` | DaemonSet trong Kubernetes: khái niệm, use cases và cách triển khai | `concept-note` | `daemonset`, `workload`, `logging`, `fluentd`, `node-exporter`, `node-affinity`, `toleration` |
 | `01-concepts/kubernetes` | `db-deployment-pvc-vs-statefulset.md` | DB Deployment + PVC vs DB StatefulSet | `concept-note` | `database`, `deployment`, `pvc`, `statefulset`, `storage` |
 | `01-concepts/kubernetes` | `Deployement tutorial.md` | Deployment tutorial: khái niệm, YAML và ví dụ triển khai Nginx | `concept-note` | `deployment`, `replicaset`, `rollingupdate`, `service`, `nodeport`, `nginx`, `yaml` |
+| `01-concepts/kubernetes` | `gateway-api-envoy-gateway-vs-nginx-ingress.md` | Gateway API, Envoy Gateway và khác biệt tư duy so với NGINX Ingress | `concept-note` | `gateway-api`, `envoy-gateway`, `envoy-proxy`, `ingress`, `nginx-ingress`, `gatewayclass`, `gateway`, `httproute`, `xds`, `control-plane`, `data-plane` |
 | `01-concepts/kubernetes` | `Ingress tutorial and NodePort - Loadbalancer.md` | Ingress, Service, NodePort và LoadBalancer trong Kubernetes | `concept-note` | `ingress`, `ingress-controller`, `service`, `nodeport`, `loadbalancer`, `reverse-proxy`, `tls` |
 | `01-concepts/kubernetes` | `kubeconfig-user-serviceaccount-rbac-runasuser.md` | Kubeconfig, User, ServiceAccount, RBAC và runAsUser trong Kubernetes | `concept-note` | `kubeconfig`, `user`, `serviceaccount`, `rbac`, `authentication`, `authorization`, `runasuser` |
 | `01-concepts/kubernetes` | `kubernetes-architecture-explained.md` | Kiến trúc Kubernetes từ control plane đến worker node | `concept-note` | `kubernetes`, `architecture`, `control-plane`, `worker-node`, `kubelet`, `etcd`, `scheduler` |
@@ -88,16 +89,19 @@ Vai trò: phân biệt workload stateful và cách chọn controller cho databas
 8. `01-concepts/kubernetes/configmap-secret-mount-into-pod.md`
 Vai trò: hiểu cách truyền cấu hình vào Pod trước khi đọc manifest HA chi tiết.
 
-9. `01-concepts/kubernetes/cert-manager-ingress-tls-flow-and-issuers.md`
+9. `01-concepts/kubernetes/gateway-api-envoy-gateway-vs-nginx-ingress.md`
+Vai trò: note trục để chuyển tư duy từ `Ingress/NGINX` sang `Gateway API/Envoy Gateway`, hiểu rõ `GatewayClass`, `Gateway`, `HTTPRoute`, `EnvoyProxy`, control plane, data plane và vì sao đây không chỉ là "Ingress đổi tên".
+
+10. `01-concepts/kubernetes/cert-manager-ingress-tls-flow-and-issuers.md`
 Vai trò: hiểu quan hệ giữa Ingress, ingress controller, cert-manager, TLS Secret, Issuer và ACME trước khi đi vào các case public HTTPS hoặc internal PKI.
 
-10. `01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md`
+11. `01-concepts/kubernetes/pod-priority-preemption-pdb-qos.md`
 Vai trò: hiểu rõ quan hệ giữa scheduler priority, preemption, PDB và QoS khi cluster thiếu tài nguyên.
 
-11. `02-architecture/postgresql-ha/bitnami-images-in-postgresql-statefulset.md`
+12. `02-architecture/postgresql-ha/bitnami-images-in-postgresql-statefulset.md`
 Vai trò: giải thích vì sao tutorial PostgreSQL HA dùng image Bitnami và script sẵn có.
 
-12. `03-runbooks/longhorn/longhorn-network-iscsi-node3-debug-runbook.md`
+13. `03-runbooks/longhorn/longhorn-network-iscsi-node3-debug-runbook.md`
 Vai trò: tài liệu debug thực chiến cho case Longhorn / network / iSCSI.
 
 ## Quy tắc rename an toàn
